@@ -161,6 +161,24 @@ func serve(cmd *cobra.Command, args []string) error {
 
 	if len(c.StaticClients) > 0 {
 		for _, client := range c.StaticClients {
+			if client.ID == nil && client.IDEnv == nil {
+				return fmt.Errorf("invalid config: ID or IDEnv is required for a client")
+			}
+			if client.IDEnv != nil {
+				if client.ID != nil {
+					return fmt.Errorf("invalid config: ID and IDEnv are exclusive for client %q", client.ID)
+				}
+				client.ID = os.ExpandEnv(client.IDEnv)
+			}
+			if client.Secret == nil && client.SecretEnv == nil {
+				return fmt.Errorf("invalid config: Secret or SecretEnv is required for client %q", client.ID)
+			}
+			if client.SecretEnv != nil {
+				if client.Secret != nil {
+					return fmt.Errorf("invalid config: Secret and SecretEnv are exclusive for client %q", client.ID)
+				}
+				client.Secret = os.ExpandEnv(client.SecretEnv)
+			}
 			logger.Infof("config static client: %s", client.ID)
 		}
 		s = storage.WithStaticClients(s, c.StaticClients)
